@@ -1,3 +1,5 @@
+import os
+import sys
 
 import streamlit as st
 import pandas as pd
@@ -5,8 +7,10 @@ import pandas as pd
 import nlu
 import policy
 import logic
-import db
+import database as db
 import utils
+
+sys.path.append(os.path.dirname(__file__))
 
 db.init_db()
 
@@ -141,10 +145,10 @@ def main():
             st.write("Account not found.")
 
         st.markdown("---")
-        st.markdown("Quick test")
+        st.markdown("Quick view: last 5 transactions")
         tx_rows = db.fetch_transactions(DEFAULT_ACCOUNT_ID, limit=5)
         st.dataframe(df_from_transactions(tx_rows))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

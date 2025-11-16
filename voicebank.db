@@ -3,17 +3,13 @@ from pathlib import Path
 import os
 import sys
 
-# Detect environment:
-# Streamlit Cloud and local machine have __file__
-# Colab notebook does NOT have __file__
+
 IS_COLAB = "__file__" not in globals()
 
 
 if IS_COLAB:
-    # Save the DB inside Google Drive
     DB_PATH = Path("/content/drive/MyDrive/Voice_Assistant_ai/voicebank.db")
 else:
-    # Save/Load DB from repository folder (Streamlit Cloud + local)
     DB_PATH = Path(__file__).with_name("voicebank.db")
 
 

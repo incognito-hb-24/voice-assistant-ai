@@ -8,6 +8,8 @@ import logic
 import db
 import utils
 
+db.init_db()
+
 DEFAULT_USER_ID = "u001"
 DEFAULT_ACCOUNT_ID = "acc_sav_001"
 

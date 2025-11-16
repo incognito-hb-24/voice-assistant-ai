@@ -1,0 +1,191 @@
+import sqlite3
+from pathlib import Path
+
+DB_PATH = Path(__file__).with_name("voicebank.db")
+
+
+def get_conn():
+    return sqlite3.connect(DB_PATH)
+
+
+def init_db():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            name TEXT,
+            phone TEXT,
+            language TEXT
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS accounts (
+            account_id TEXT PRIMARY KEY,
+            user_id TEXT,
+            type TEXT,
+            balance REAL,
+            credit_limit REAL,
+            loan_status TEXT
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS transactions (
+            txn_id TEXT PRIMARY KEY,
+            account_id TEXT,
+            type TEXT,
+            amount REAL,
+            category TEXT,
+            date TEXT
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS payees (
+            payee_name TEXT PRIMARY KEY,
+            upi_id TEXT
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS loan_rates (
+            loan_type TEXT PRIMARY KEY,
+            interest_rate REAL
+        )
+    """)
+
+    cur.execute("SELECT COUNT(*) FROM users")
+    if cur.fetchone()[0] == 0:
+        cur.execute(
+            "INSERT INTO users VALUES (?, ?, ?, ?)",
+            ("u001", "Himanshu", "9876543210", "en-IN"),
+        )
+
+        accounts = [
+            ("acc_sav_001", "u001", "savings", 25000.0, None, None),
+            ("acc_cc_001", "u001", "credit_card", -5000.0, 50000.0, None),
+            ("acc_loan_001", "u001", "loan", None, None, "active"),
+        ]
+        cur.executemany("INSERT INTO accounts VALUES (?, ?, ?, ?, ?, ?)", accounts)
+
+        transactions = [
+            ("txn_001", "acc_sav_001", "debit", 500.0, "food", "2025-01-05"),
+            ("txn_002", "acc_sav_001", "debit", 1500.0, "shopping", "2025-01-10"),
+            ("txn_003", "acc_sav_001", "credit", 20000.0, "salary", "2025-01-31"),
+            ("txn_004", "acc_sav_001", "debit", 800.0, "food", "2025-02-02"),
+            ("txn_005", "acc_sav_001", "debit", 999.0, "utilities", "2025-02-05"),
+        ]
+        cur.executemany(
+            "INSERT INTO transactions VALUES (?, ?, ?, ?, ?, ?)",
+            transactions,
+        )
+
+        payees = [
+            ("Ananya", "ananya@ybl"),
+            ("Riya", "riya@upi"),
+            ("Suresh", "suresh@okicici"),
+        ]
+        cur.executemany("INSERT INTO payees VALUES (?, ?)", payees)
+
+        loan_rates = [
+            ("personal_loan", 12.5),
+            ("home_loan", 8.45),
+            ("car_loan", 9.20),
+        ]
+        cur.executemany("INSERT INTO loan_rates VALUES (?, ?)", loan_rates)
+
+    conn.commit()
+    conn.close()
+
+
+def fetch_user(user_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+
+def fetch_account(account_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM accounts WHERE account_id=?", (account_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+
+def update_balance(account_id, new_balance):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("UPDATE accounts SET balance=? WHERE account_id=?", (new_balance, account_id))
+    conn.commit()
+    conn.close()
+
+
+def insert_transaction(txn_id, account_id, txn_type, amount, category, date):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO transactions VALUES (?, ?, ?, ?, ?, ?)",
+        (txn_id, account_id, txn_type, amount, category, date),
+    )
+    conn.commit()
+    conn.close()
+
+
+def fetch_transactions(account_id, limit=5):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT txn_id, type, amount, category, date
+        FROM transactions
+        WHERE account_id=?
+        ORDER BY date DESC
+        LIMIT ?
+        """,
+        (account_id, limit),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
+def fetch_all_transactions(account_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT txn_id, type, amount, category, date
+        FROM transactions
+        WHERE account_id=?
+        ORDER BY date DESC
+        """,
+        (account_id,),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
+def fetch_payee(payee_name):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT upi_id FROM payees WHERE payee_name=?", (payee_name,))
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+
+def fetch_loan_rate(loan_type):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT interest_rate FROM loan_rates WHERE loan_type=?", (loan_type,))
+    row = cur.fetchone()
+    conn.close()
+    return row
